@@ -1,0 +1,231 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""Model data pelanggan (customer)"""
+type Customer {
+  """ID unik pelanggan"""
+  id: ID!
+
+  """Nama lengkap pelanggan"""
+  name: String!
+
+  """Alamat email pelanggan"""
+  email: String!
+
+  """Waktu pendaftaran data pelanggan"""
+  createdAt: DateTime!
+
+  """Waktu pembaruan data pelanggan terakhir"""
+  updatedAt: DateTime!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+"""Hasil paginasi data pelanggan"""
+type CustomerPaginationResult {
+  """Daftar data pelanggan pada halaman saat ini"""
+  data: [Customer!]!
+
+  """Total jumlah keseluruhan data pelanggan"""
+  total: Int!
+
+  """Nomor halaman saat ini"""
+  page: Int!
+
+  """Jumlah item per halaman"""
+  limit: Int!
+
+  """Total jumlah halaman"""
+  totalPages: Int!
+}
+
+"""Model data dokter"""
+type Doctor {
+  """ID unik dokter"""
+  id: ID!
+
+  """Nama lengkap dokter"""
+  name: String!
+
+  """Waktu pembuatan data dokter"""
+  createdAt: DateTime!
+
+  """Waktu pembaruan data dokter terakhir"""
+  updatedAt: DateTime!
+}
+
+"""Hasil paginasi data dokter"""
+type DoctorPaginationResult {
+  """Daftar data dokter pada halaman saat ini"""
+  data: [Doctor!]!
+
+  """Total jumlah keseluruhan data dokter"""
+  total: Int!
+
+  """Nomor halaman saat ini"""
+  page: Int!
+
+  """Jumlah item per halaman"""
+  limit: Int!
+
+  """Total jumlah halaman"""
+  totalPages: Int!
+}
+
+"""Model data jadwal konsultasi (schedule)"""
+type Schedule {
+  """ID unik jadwal"""
+  id: ID!
+
+  """Tujuan atau deskripsi singkat konsultasi"""
+  objective: String!
+
+  """ID pelanggan yang menjadwalkan"""
+  customerId: ID!
+
+  """ID dokter yang dituju"""
+  doctorId: ID!
+
+  """Waktu pelaksanaan konsultasi"""
+  scheduledAt: DateTime!
+
+  """Waktu pembuatan data jadwal"""
+  createdAt: DateTime!
+
+  """Waktu pembaruan data jadwal terakhir"""
+  updatedAt: DateTime!
+
+  """Data pelanggan terkait"""
+  customer: Customer
+
+  """Data dokter terkait"""
+  doctor: Doctor
+}
+
+"""Hasil paginasi data jadwal"""
+type SchedulePaginationResult {
+  """Daftar data jadwal pada halaman saat ini"""
+  data: [Schedule!]!
+
+  """Total jumlah keseluruhan data jadwal"""
+  total: Int!
+
+  """Nomor halaman saat ini"""
+  page: Int!
+
+  """Jumlah item per halaman"""
+  limit: Int!
+
+  """Total jumlah halaman"""
+  totalPages: Int!
+}
+
+type Query {
+  """Mendapatkan daftar pelanggan dengan paginasi"""
+  customers(page: Int! = 1, limit: Int! = 10): CustomerPaginationResult!
+
+  """Mendapatkan detail pelanggan berdasarkan ID"""
+  customer(id: ID!): Customer!
+
+  """Mendapatkan daftar dokter dengan paginasi"""
+  doctors(page: Int! = 1, limit: Int! = 10): DoctorPaginationResult!
+
+  """Mendapatkan detail dokter berdasarkan ID"""
+  doctor(id: ID!): Doctor!
+
+  """Mendapatkan daftar jadwal dengan paginasi dan filter"""
+  schedules(page: Int! = 1, limit: Int! = 10, filter: ScheduleFilterInput): SchedulePaginationResult!
+
+  """Mendapatkan detail jadwal berdasarkan ID"""
+  schedule(id: ID!): Schedule!
+}
+
+"""Filter pencarian data jadwal"""
+input ScheduleFilterInput {
+  """Filter berdasarkan ID dokter"""
+  doctorId: ID
+
+  """Filter berdasarkan ID pelanggan"""
+  customerId: ID
+
+  """Filter dari tanggal (dateFrom)"""
+  dateFrom: DateTime
+
+  """Filter sampai tanggal (dateTo)"""
+  dateTo: DateTime
+}
+
+type Mutation {
+  """Membuat data pelanggan baru"""
+  createCustomer(input: CreateCustomerInput!): Customer!
+
+  """Memperbarui data pelanggan"""
+  updateCustomer(id: ID!, input: UpdateCustomerInput!): Customer!
+
+  """Menghapus data pelanggan"""
+  deleteCustomer(id: ID!): Boolean!
+
+  """Membuat data dokter baru"""
+  createDoctor(input: CreateDoctorInput!): Doctor!
+
+  """Memperbarui data dokter"""
+  updateDoctor(id: ID!, input: UpdateDoctorInput!): Doctor!
+
+  """Menghapus data dokter"""
+  deleteDoctor(id: ID!): Boolean!
+
+  """Membuat jadwal baru"""
+  createSchedule(input: CreateScheduleInput!): Schedule!
+
+  """Menghapus data jadwal"""
+  deleteSchedule(id: ID!): Boolean!
+}
+
+"""Input data untuk membuat pelanggan baru"""
+input CreateCustomerInput {
+  """Nama lengkap pelanggan"""
+  name: String!
+
+  """Alamat email pelanggan"""
+  email: String!
+}
+
+"""Input data untuk memperbarui pelanggan"""
+input UpdateCustomerInput {
+  """Nama lengkap pelanggan"""
+  name: String
+
+  """Alamat email pelanggan"""
+  email: String
+}
+
+"""Input data untuk membuat dokter baru"""
+input CreateDoctorInput {
+  """Nama lengkap dokter"""
+  name: String!
+}
+
+"""Input data untuk memperbarui dokter"""
+input UpdateDoctorInput {
+  """Nama lengkap dokter"""
+  name: String
+}
+
+"""Input data untuk membuat jadwal baru"""
+input CreateScheduleInput {
+  """Tujuan atau deskripsi singkat konsultasi"""
+  objective: String!
+
+  """ID pelanggan"""
+  customerId: ID!
+
+  """ID dokter"""
+  doctorId: ID!
+
+  """Waktu jadwal konsultasi"""
+  scheduledAt: DateTime!
+}
