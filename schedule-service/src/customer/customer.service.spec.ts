@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CustomerService } from './customer.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('CustomerService', () => {
   let service: CustomerService;
   let prismaService: any;
+  let cacheManager: any;
 
   const mockCustomer = {
     id: 'cust-uuid-1',
@@ -27,10 +29,17 @@ describe('CustomerService', () => {
       },
     };
 
+    cacheManager = {
+      get: jest.fn().mockResolvedValue(null),
+      set: jest.fn().mockResolvedValue(undefined),
+      reset: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CustomerService,
         { provide: PrismaService, useValue: prismaService },
+        { provide: CACHE_MANAGER, useValue: cacheManager },
       ],
     }).compile();
 
@@ -60,6 +69,16 @@ describe('CustomerService', () => {
         limit: 10,
         totalPages: 1,
       });
+    });
+
+    it('harus mengembalikan data dari cache jika tersedia', async () => {
+      const cachedResult = { data: [mockCustomer], total: 1, page: 1, limit: 10, totalPages: 1 };
+      cacheManager.get.mockResolvedValue(cachedResult);
+
+      const result = await service.findAll(1, 10);
+
+      expect(result).toEqual(cachedResult);
+      expect(prismaService.customer.findMany).not.toHaveBeenCalled();
     });
   });
 

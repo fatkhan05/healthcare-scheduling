@@ -1,11 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { getQueueToken } from '@nestjs/bull';
 import { ScheduleService } from './schedule.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('ScheduleService', () => {
   let service: ScheduleService;
   let prismaService: any;
+  let cacheManager: any;
+  let notificationQueue: any;
 
   const mockCustomer = {
     id: 'cust-uuid-1',
@@ -46,10 +50,22 @@ describe('ScheduleService', () => {
       },
     };
 
+    cacheManager = {
+      get: jest.fn().mockResolvedValue(null),
+      set: jest.fn().mockResolvedValue(undefined),
+      reset: jest.fn().mockResolvedValue(undefined),
+    };
+
+    notificationQueue = {
+      add: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ScheduleService,
         { provide: PrismaService, useValue: prismaService },
+        { provide: CACHE_MANAGER, useValue: cacheManager },
+        { provide: getQueueToken('notification'), useValue: notificationQueue },
       ],
     }).compile();
 
@@ -83,6 +99,16 @@ describe('ScheduleService', () => {
         totalPages: 1,
       });
     });
+
+    it('harus mengembalikan data dari cache jika tersedia', async () => {
+      const cachedResult = { data: [mockSchedule], total: 1, page: 1, limit: 10, totalPages: 1 };
+      cacheManager.get.mockResolvedValue(cachedResult);
+
+      const result = await service.findAll(1, 10);
+
+      expect(result).toEqual(cachedResult);
+      expect(prismaService.schedule.findMany).not.toHaveBeenCalled();
+    });
   });
 
   describe('findOne', () => {
@@ -109,7 +135,7 @@ describe('ScheduleService', () => {
       scheduledAt: new Date('2026-10-10T10:00:00.000Z'),
     };
 
-    it('harus berhasil membuat jadwal baru jika customer & doctor ada dan tidak bentrok', async () => {
+    it('harus berhasil membuat jadwal baru dan enqueue email notification', async () => {
       prismaService.customer.findUnique.mockResolvedValue(mockCustomer);
       prismaService.doctor.findUnique.mockResolvedValue(mockDoctor);
       prismaService.schedule.findFirst.mockResolvedValue(null);
@@ -122,6 +148,7 @@ describe('ScheduleService', () => {
       expect(prismaService.schedule.findFirst).toHaveBeenCalledWith({
         where: { doctorId: createInput.doctorId, scheduledAt: createInput.scheduledAt },
       });
+      expect(notificationQueue.add).toHaveBeenCalledWith('send-schedule-email', expect.anything());
       expect(result).toEqual(mockSchedule);
     });
 
@@ -150,14 +177,17 @@ describe('ScheduleService', () => {
   });
 
   describe('delete', () => {
-    it('harus berhasil menghapus jadwal', async () => {
+    it('harus berhasil menghapus jadwal dan enqueue cancellation email', async () => {
       prismaService.schedule.findUnique.mockResolvedValue(mockSchedule);
+      prismaService.customer.findUnique.mockResolvedValue(mockCustomer);
+      prismaService.doctor.findUnique.mockResolvedValue(mockDoctor);
       prismaService.schedule.delete.mockResolvedValue(mockSchedule);
 
       const result = await service.delete('sched-uuid-1');
 
       expect(result).toBe(true);
       expect(prismaService.schedule.delete).toHaveBeenCalledWith({ where: { id: 'sched-uuid-1' } });
+      expect(notificationQueue.add).toHaveBeenCalledWith('send-schedule-email', expect.anything());
     });
   });
 });

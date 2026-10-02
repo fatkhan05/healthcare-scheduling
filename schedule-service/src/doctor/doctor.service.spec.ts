@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { DoctorService } from './doctor.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('DoctorService', () => {
   let service: DoctorService;
   let prismaService: any;
+  let cacheManager: any;
 
   const mockDoctor = {
     id: 'doc-uuid-1',
@@ -26,10 +28,17 @@ describe('DoctorService', () => {
       },
     };
 
+    cacheManager = {
+      get: jest.fn().mockResolvedValue(null),
+      set: jest.fn().mockResolvedValue(undefined),
+      reset: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DoctorService,
         { provide: PrismaService, useValue: prismaService },
+        { provide: CACHE_MANAGER, useValue: cacheManager },
       ],
     }).compile();
 
@@ -59,6 +68,16 @@ describe('DoctorService', () => {
         limit: 10,
         totalPages: 1,
       });
+    });
+
+    it('harus mengembalikan data dari cache jika tersedia', async () => {
+      const cachedResult = { data: [mockDoctor], total: 1, page: 1, limit: 10, totalPages: 1 };
+      cacheManager.get.mockResolvedValue(cachedResult);
+
+      const result = await service.findAll(1, 10);
+
+      expect(result).toEqual(cachedResult);
+      expect(prismaService.doctor.findMany).not.toHaveBeenCalled();
     });
   });
 
